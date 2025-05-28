@@ -35,6 +35,7 @@ replay_pid*
 
 #data
 data/
+volume-data/
 #target
 maven-status/
 maven-archiver/
