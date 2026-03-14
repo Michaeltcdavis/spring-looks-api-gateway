@@ -336,6 +336,35 @@ logging.level.org.springframework.cloud.gateway=DEBUG
 
 ---
 
+## Future Enhancements
+
+This section outlines planned improvements and features for the Spring Looks API Gateway and microservices platform.
+
+### Infrastructure & Deployment
+- [ ] **Azure Cloud Deployment**
+  - Deploy microservices to Azure Container Apps
+  - Set up Azure Database for MySQL
+  - Configure Azure Key Vault for secrets management
+  - Implement Azure Application Gateway for external routing
+  - see branch feat/deploy-scripts
+
+### Authentication & Security
+- [ ] **Migrate to Azure Entra ID**
+  - Replace Keycloak with Azure Entra ID for authentication
+  - Configure App Registrations for microservices
+  - Implement Azure AD OAuth2 flows
+  - Reduce infrastructure overhead and costs
+
+
+### 🏗️ Architecture Improvements
+- [ ] **Service Mesh Integration**
+  - Investigate Istio or Linkerd for service-to-service communication
+  - Implement advanced traffic management
+  - Add mutual TLS between services
+
+
+---
+
 **Last Updated**: March 2026  
 **Version**: 0.0.1-SNAPSHOT  
 **Java Version**: 21+  
