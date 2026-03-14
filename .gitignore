@@ -50,3 +50,6 @@ HELP.md
 
 #target
 target
+
+# Environment files with sensitive credentials
+.env
