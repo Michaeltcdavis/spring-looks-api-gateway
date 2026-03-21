@@ -34,17 +34,7 @@ replay_pid*
 .DS_Store
 
 #data
-data/
 volume-data/
-#target
-maven-status/
-maven-archiver/
-surefire-reports/
-product_service-0.0.1-SNAPSHOT.jar
-product_service-0.0.1-SNAPSHOT.jar.original
-
-#mysql
-mysql/
 
 HELP.md
 
@@ -53,3 +43,4 @@ target
 
 # Environment files with sensitive credentials
 .env
+.env.dev
