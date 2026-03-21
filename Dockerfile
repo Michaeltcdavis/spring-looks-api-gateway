@@ -13,7 +13,9 @@ RUN ./mvnw clean package -DskipTests -q
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-COPY --from=build /app/target/*.jar app.jar
+RUN addgroup -S springGroup && adduser -S springUser -G springGroup
+COPY --from=build --chown=springUser:springGroup /app/target/*.jar app.jar
+USER springUser
 
 EXPOSE 9000
 ENTRYPOINT ["java", "-jar", "app.jar"]
