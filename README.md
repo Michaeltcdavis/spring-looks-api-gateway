@@ -15,15 +15,13 @@ A secure API Gateway for the Spring Looks e-commerce application, providing cent
 - [Security](#security)
 - [Monitoring & Health Checks](#monitoring--health-checks)
 - [Dependencies](#dependencies)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
 
 ## Project Description
 
 The Spring Looks API Gateway serves as the central entry point for all client requests to the Spring Looks e-commerce platform. It provides:
 
 - **Request Routing**: Routes requests to appropriate microservices (Product, Order, Inventory)
-- **Security**: JWT-based authentication using Keycloak
+- **Security**: JWT-based authentication using Microsoft Azure Entra ID
 - **Circuit Breaking**: Resilience4j for fault tolerance
 - **API Documentation**: Aggregated Swagger UI for all services
 - **Cross-Origin Resource Sharing**: CORS configuration for web clients
@@ -40,7 +38,7 @@ Client → API Gateway (Port 9000) → Microservices
 
 ## Features
 
-- ✅ **JWT Authentication** with Keycloak integration
+- ✅ **JWT Authentication** with Azure Entra ID integration
 - ✅ **Circuit Breaker Pattern** with fallback responses
 - ✅ **Aggregated API Documentation** via Swagger UI
 - ✅ **CORS Support** for frontend applications
@@ -56,71 +54,44 @@ Before setting up the project, ensure you have:
 - **Maven 3.8+**
 - **Docker** and **Docker Compose**
 - **Git**
+- **Microsoft Azure account** with Azure Entra ID (formerly Azure Active Directory) configured
 
 ## Project Setup
 
-### Security First: Configure Keycloak Credentials
+### Security First: Configure Azure Entra ID Credentials
 
-Before starting the containers, create a `.env` file in the project root to securely configure Keycloak admin credentials:
+This project uses Microsoft Azure Entra ID for authentication. Before running the application, you must set up an Azure Entra ID account and register an application in the Azure portal to obtain the required credentials.
+
+Once your Azure Entra ID App Registration is in place, create a `.env.dev` file in the project root to securely configure the required credentials:
 
 ```bash
-# Create .env file (add to .gitignore)
-cat > .env << EOF
-KEYCLOAK_ADMIN=your_admin_username
-KEYCLOAK_ADMIN_PASSWORD=your_secure_password
-MYSQL_ROOT_PASSWORD=your_mysql_root_password
-MYSQL_PASSWORD=your_keycloak_db_password
+# Create .env.dev file (add to .gitignore)
+cat > .env.dev << EOF
+AZURE_CLIENT_ID=your-azure-app-client-id
+AZURE_TENANT_ID=your-azure-tenant-id
+AZURE_APP_ID_URI=api://your-azure-app-client-id
 EOF
 ```
 
-> **Note**: Ensure `.env` is added to your `.gitignore` file to prevent credentials from being committed to version control.
+| Variable | Description |
+|----------|-------------|
+| `AZURE_CLIENT_ID` | The Application (client) ID of your Azure Entra ID App Registration |
+| `AZURE_TENANT_ID` | The Directory (tenant) ID of your Azure Entra ID tenant |
+| `AZURE_APP_ID_URI` | The Application ID URI configured for the resource server (e.g. `api://<client-id>`) |
 
-### 1. Start Keycloak and MySQL
+> **Note**: Ensure `.env.dev` is added to your `.gitignore` file to prevent credentials from being committed to version control.
+
+### 1. Start the API Gateway
 
 ```bash
-# Start Keycloak container with MySQL database
+# Start the gateway container
 docker compose up -d
-```
 
-Wait for both containers to start completely (check with `docker compose logs -f`).
-
-### 2. Configure Keycloak
-
-1. Access Keycloak admin console: http://localhost:8181
-2. Login with admin credentials:
-   - Username: `${KEYCLOAK_ADMIN}` (default: set in docker-compose.yml)
-   - Password: `${KEYCLOAK_ADMIN_PASSWORD}` (default: set in docker-compose.yml)
-   
-   > **Security Note**: The default credentials are configured in `docker-compose.yml`. 
-   > For production environments, ensure you change these credentials and use secure password management.
-
-3. Create a new realm:
-   - Click "Create realm"
-   - Realm name: `spring-looks-security`
-   - Click "Create"
-
-4. Create a client:
-   - Go to Clients → Create client
-   - Client ID: `spring-looks-client`
-   - Client authentication: `ON`
-   - Authentication flow: Enable "Service accounts roles"
-   - Click "Save"
-
-5. Configure client settings:
-   - Set valid redirect URIs: `http://localhost:9000/*`
-   - Set web origins: `http://localhost:9000`
-
-### 3. Start the API Gateway
-
-```bash
-# Using Maven wrapper
+# Or run locally using Maven wrapper
 ./mvnw spring-boot:run
-
-# Or using your IDE
-# Import the project and run ApiGatewayApplication.java
 ```
 
-### 4. Start Dependent Microservices
+### 2. Start Dependent Microservices
 
 Ensure the following services are running on their respective ports:
 - Product Service: `http://localhost:8080`
@@ -128,43 +99,23 @@ Ensure the following services are running on their respective ports:
 - Inventory Service: `http://localhost:8082`
 
 ## Configuration
-
-### Application Properties
-
-Key configuration settings in `src/main/resources/application.properties`:
-
-```properties
-# Server Configuration
-spring.application.name=api-gateway
-server.port=9000
-
-# OAuth2 Resource Server Configuration
-spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8181/realms/spring-looks-security
-
-# Swagger UI Configuration
-springdoc.swagger-ui.path=/swagger-ui.html
-springdoc.api-docs.path=/api-docs
-
-# Circuit Breaker Configuration
-resilience4j.circuitbreaker.configs.default.failureRateThreshold=50
-resilience4j.circuitbreaker.configs.default.waitDurationInOpenState=5s
 ```
 
 ### Environment Variables
 
-You can override default configurations using environment variables:
+You can override default configurations using environment variables or by updating your `.env.dev` file:
 
 ```bash
 # Application Configuration
 export SERVER_PORT=9000
-export KEYCLOAK_URL=http://localhost:8181/realms/spring-looks-security
 export PRODUCT_SERVICE_URL=http://localhost:8080
 export ORDER_SERVICE_URL=http://localhost:8081
 export INVENTORY_SERVICE_URL=http://localhost:8082
 
-# Keycloak Admin Configuration (for setup)
-export KEYCLOAK_ADMIN=your_admin_username
-export KEYCLOAK_ADMIN_PASSWORD=your_secure_password
+# Azure Entra ID Configuration
+export AZURE_CLIENT_ID=your-azure-app-client-id
+export AZURE_TENANT_ID=your-azure-tenant-id
+export AZURE_APP_ID_URI=api://your-azure-app-client-id
 ```
 
 > **Important**: Never commit credentials to version control. Use environment variables or secure credential management systems.
@@ -211,10 +162,10 @@ Each route is protected by a circuit breaker:
 
 ### Authentication Flow
 
-1. Client obtains JWT token from Keycloak
-2. Client includes token in Authorization header: `Bearer <token>`
-3. Gateway validates token with Keycloak
-4. Valid requests are forwarded to target services
+1. Client obtains a JWT access token from Azure Entra ID (via OAuth2 / OIDC)
+2. Client includes token in the Authorization header: `Bearer <token>`
+3. Gateway validates the token against Azure Entra ID
+4. Valid requests are forwarded to the target services
 
 ### Protected Endpoints
 
@@ -260,7 +211,7 @@ CORS is enabled for all origins with the following methods:
 |------------|---------|---------|
 | Spring Boot | 3.5.0 | Application framework |
 | Spring Cloud Gateway MVC | 2025.0.0-RC1 | API Gateway functionality |
-| Spring Security OAuth2 | 3.5.0 | JWT authentication |
+| Spring Cloud Azure | Latest | Azure Entra ID / AAD integration |
 | Resilience4j | 3.5.0 | Circuit breaker pattern |
 | SpringDoc OpenAPI | 2.8.8 | API documentation |
 | Spring Boot Actuator | 3.5.0 | Health monitoring |
@@ -269,92 +220,15 @@ CORS is enabled for all origins with the following methods:
 
 | Service | Version | Purpose |
 |---------|---------|---------|
-| Keycloak | 26.2 | Authentication server |
-| MySQL | 8.0 | Database for Keycloak |
+| Azure Entra ID | - | Authentication & authorisation (cloud-hosted) |
 | Docker | Latest | Containerization |
 | Java | 21+ | Runtime environment |
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. Gateway returns 401 Unauthorized
-- **Cause**: Missing or invalid JWT token
-- **Solution**: Ensure you're sending a valid Bearer token from Keycloak
-
-#### 2. Service Unavailable responses
-- **Cause**: Target microservices are down or circuit breaker is open
-- **Solution**: 
-  - Check if microservices are running
-  - Check circuit breaker status at `/actuator/circuitbreakers`
-  - Wait for circuit breaker to close
-
-#### 3. Keycloak connection issues
-- **Cause**: Keycloak server not accessible or authentication failed
-- **Solution**:
-  - Verify Keycloak is running: `docker compose ps`
-  - Check Keycloak logs: `docker compose logs keycloak`
-  - Ensure realm `spring-looks-security` exists
-  - Verify admin credentials in `.env` file are correct
-
-#### 4. Keycloak admin login fails
-- **Cause**: Incorrect admin credentials
-- **Solution**:
-  - Check your `.env` file for correct `KEYCLOAK_ADMIN` and `KEYCLOAK_ADMIN_PASSWORD`
-  - Restart containers after changing credentials: `docker compose down && docker compose up -d`
-  - Wait for Keycloak to fully initialize before attempting login
-
-#### 5. Port conflicts
-- **Cause**: Port 9000 already in use
-- **Solution**: Change server port in `application.properties` or stop conflicting process
-
-### Logging
-
-Enable debug logging by adding to `application.properties`:
-
-```properties
-logging.level.com.springlooks.gateway=DEBUG
-logging.level.org.springframework.security=DEBUG
-logging.level.org.springframework.cloud.gateway=DEBUG
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/new-feature`
-3. Commit your changes: `git commit -am 'Add new feature'`
-4. Push to the branch: `git push origin feature/new-feature`
-5. Submit a pull request
-
-### Development Guidelines
-
-- Follow Spring Boot best practices
-- Add unit tests for new features
-- Update documentation for configuration changes
-- Ensure security configurations are not hardcoded
-- Test circuit breaker scenarios
 
 ---
 
 ## Future Enhancements
 
 This section outlines planned improvements and features for the Spring Looks API Gateway and microservices platform.
-
-### Infrastructure & Deployment
-- [ ] **Azure Cloud Deployment**
-  - Deploy microservices to Azure Container Apps
-  - Set up Azure Database for MySQL
-  - Configure Azure Key Vault for secrets management
-  - Implement Azure Application Gateway for external routing
-  - see branch feat/deploy-scripts
-
-### Authentication & Security
-- [ ] **Migrate to Azure Entra ID**
-  - Replace Keycloak with Azure Entra ID for authentication
-  - Configure App Registrations for microservices
-  - Implement Azure AD OAuth2 flows
-  - Reduce infrastructure overhead and costs
-
 
 ### 🏗️ Architecture Improvements
 - [ ] **Service Mesh Integration**
@@ -364,8 +238,3 @@ This section outlines planned improvements and features for the Spring Looks API
 
 
 ---
-
-**Last Updated**: March 2026  
-**Version**: 0.0.1-SNAPSHOT  
-**Java Version**: 21+  
-**Spring Boot Version**: 3.5.0
