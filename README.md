@@ -99,7 +99,6 @@ Ensure the following services are running on their respective ports:
 - Inventory Service: `http://localhost:8082`
 
 ## Configuration
-```
 
 ### Environment Variables
 
@@ -224,17 +223,3 @@ CORS is enabled for all origins with the following methods:
 | Docker | Latest | Containerization |
 | Java | 21+ | Runtime environment |
 
----
-
-## Future Enhancements
-
-This section outlines planned improvements and features for the Spring Looks API Gateway and microservices platform.
-
-### 🏗️ Architecture Improvements
-- [ ] **Service Mesh Integration**
-  - Investigate Istio or Linkerd for service-to-service communication
-  - Implement advanced traffic management
-  - Add mutual TLS between services
-
-
----
