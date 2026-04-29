@@ -2,6 +2,8 @@
 
 A secure API Gateway for the Spring Looks e-commerce application, providing centralized routing, authentication, and monitoring for microservices.
 
+The Spring Looks Microservices application was deployed to Azure using docker, container apps, a virtual network with subnets.
+
 ## Table of Contents
 
 - [Project Description](#project-description)
